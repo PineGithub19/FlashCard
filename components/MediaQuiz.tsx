@@ -17,6 +17,17 @@ export default function MediaQuiz({ quiz }: MediaQuizProps) {
                 ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto'
                 : 'grid-cols-2 max-w-2xl mx-auto';
 
+    const getVideoType = (url: string) => {
+        if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
+        return "file";
+    }
+
+    const getYoutubeId = (url: string) => {
+        const reg =
+            /(?:youtube\.com\/(?:shorts\/|watch\?v=)|youtu\.be\/)([^?&/]+)/;
+        return url.match(reg)?.[1];
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -30,11 +41,23 @@ export default function MediaQuiz({ quiz }: MediaQuizProps) {
 
             {mediaType === 'video' && mediaSources[0] && (
                 <div className="flex justify-center">
-                    <video
-                        src={mediaSources[0]}
-                        controls
-                        className="w-full max-w-2xl rounded-xl border border-white/10 shadow-2xl"
-                    />
+                    {getVideoType(mediaSources[0]) === "youtube" ? (
+                        <iframe
+                            width="560"
+                            height="315"
+                            src={`https://www.youtube.com/embed/${getYoutubeId(mediaSources[0])}`}
+                            title="YouTube video player"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            className="w-full max-w-2xl rounded-xl border border-white/10 shadow-2xl"
+                        ></iframe>
+                    ) : (
+                        <video
+                            src={mediaSources[0]}
+                            controls
+                            className="w-full max-w-2xl rounded-xl border border-white/10 shadow-2xl"
+                        />
+                    )}
                 </div>
             )}
 
