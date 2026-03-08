@@ -3,8 +3,8 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { useGameStore } from '@/store/gameStore';
 import { useBeforeUnload } from '@/hooks/useBeforeUnload';
+import { useSaveQuiz } from '@/hooks/useQuiz';
 import { generateId } from '@/lib/imageUtils';
 import type { QuizData, CardConfig } from '@/types/game';
 import ImageUploader from '@/components/home/ImageUploader';
@@ -25,7 +25,6 @@ function createDefaultQuiz(): QuizData {
 
 export default function HomePage() {
   const router = useRouter();
-  const setConfig = useGameStore((s) => s.setConfig);
 
   const [imageSource, setImageSource] = useState('');
   const [cardCount, setCardCount] = useState(6);
@@ -71,6 +70,8 @@ export default function HomePage() {
 
   const isValid = validation.length === 0;
 
+  const { mutate: saveQuiz, isPending: isSaving } = useSaveQuiz();
+
   const handleStartGame = () => {
     if (!isValid) return;
 
@@ -80,13 +81,18 @@ export default function HomePage() {
       quiz,
     }));
 
-    setConfig({
-      imageSource,
-      cardCount,
-      cards,
-    });
-
-    router.push('/play');
+    // Start mutation
+    saveQuiz(
+      { imageSource, cardCount, cards },
+      {
+        onSuccess: (data) => {
+          router.push(data.play_url);
+        },
+        onError: (err) => {
+          alert(`Failed to save quiz: ${err.message}`);
+        }
+      }
+    );
   };
 
   return (
@@ -150,18 +156,18 @@ export default function HomePage() {
 
           {/* Start Button */}
           <motion.button
-            whileHover={isValid ? { scale: 1.02 } : {}}
-            whileTap={isValid ? { scale: 0.98 } : {}}
+            whileHover={isValid && !isSaving ? { scale: 1.02 } : {}}
+            whileTap={isValid && !isSaving ? { scale: 0.98 } : {}}
             onClick={handleStartGame}
-            disabled={!isValid}
+            disabled={!isValid || isSaving}
             className={`w-full py-4 rounded-2xl font-bold text-lg transition-all duration-300 cursor-pointer
-              ${isValid
+              ${isValid && !isSaving
                 ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 text-white shadow-2xl shadow-violet-500/30 hover:shadow-violet-500/50'
                 : 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
               }
             `}
           >
-            🚀 Start Game
+            {isSaving ? '⏳ Saving & Uploading...' : '🚀 Start Game'}
           </motion.button>
         </motion.div>
 
