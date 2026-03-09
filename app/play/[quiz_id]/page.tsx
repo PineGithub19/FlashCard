@@ -15,7 +15,8 @@ export default function PlayDynamicPage({ params }: { params: Promise<{ quiz_id:
     const resolvedParams = use(params);
     const quizId = resolvedParams.quiz_id;
 
-    const { data: quizConfig, isLoading, error } = useFetchQuiz(quizId);
+    const isLocal = quizId === 'local';
+    const { data: quizConfig, isLoading, error } = useFetchQuiz(isLocal ? '' : quizId);
 
     const {
         config,
@@ -32,19 +33,26 @@ export default function PlayDynamicPage({ params }: { params: Promise<{ quiz_id:
 
     // Load config into the store when it is fetched
     useEffect(() => {
-        if (quizConfig && (!config || config.cards[0]?.id !== quizConfig.cards[0]?.id)) {
+        if (!isLocal && quizConfig && (!config || config.cards[0]?.id !== quizConfig.cards[0]?.id)) {
             setConfig(quizConfig);
             startGame();
         }
-    }, [quizConfig, config, setConfig, startGame]);
+    }, [isLocal, quizConfig, config, setConfig, startGame]);
 
-    // Handle errors
+    // Handle errors (skip if local)
     useEffect(() => {
-        if (error) {
+        if (!isLocal && error) {
             alert(`Failed to load quiz: ${error.message}`);
             router.replace('/');
         }
-    }, [error, router]);
+    }, [isLocal, error, router]);
+
+    // Handle missing state on local mode
+    useEffect(() => {
+        if (isLocal && !config) {
+            router.replace('/');
+        }
+    }, [isLocal, config, router]);
 
     // Reload protection while playing
     useBeforeUnload(phase === 'playing');

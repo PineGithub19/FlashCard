@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useBeforeUnload } from '@/hooks/useBeforeUnload';
 import { useSaveQuiz } from '@/hooks/useQuiz';
+import { useGameStore } from '@/store/gameStore';
 import { generateId } from '@/lib/imageUtils';
+import { Alert } from '@/lib/alertUtils';
 import type { QuizData, CardConfig } from '@/types/game';
 import ImageUploader from '@/components/home/ImageUploader';
 import CardConfigurator from '@/components/home/CardConfigurator';
@@ -71,6 +73,34 @@ export default function HomePage() {
   const isValid = validation.length === 0;
 
   const { mutate: saveQuiz, isPending: isSaving } = useSaveQuiz();
+  const setConfig = useGameStore((s) => s.setConfig);
+
+  const handleQuickStart = async () => {
+    if (!isValid) return;
+
+    const isConfirmed = await Alert.confirm(
+      'Quick Start',
+      'This will start the game immediately without saving it. You will not get a unique link to share with others. Continue?',
+      'Yes, start now',
+      'Cancel'
+    );
+
+    if (isConfirmed) {
+      const cards: CardConfig[] = quizzes.map((quiz, i) => ({
+        id: generateId(),
+        index: i,
+        quiz,
+      }));
+
+      setConfig({
+        imageSource,
+        cardCount,
+        cards,
+      });
+
+      router.push('/play/local');
+    }
+  };
 
   const handleStartGame = () => {
     if (!isValid) return;
@@ -154,21 +184,36 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Start Button */}
-          <motion.button
-            whileHover={isValid && !isSaving ? { scale: 1.02 } : {}}
-            whileTap={isValid && !isSaving ? { scale: 0.98 } : {}}
-            onClick={handleStartGame}
-            disabled={!isValid || isSaving}
-            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all duration-300 cursor-pointer
-              ${isValid && !isSaving
-                ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 text-white shadow-2xl shadow-violet-500/30 hover:shadow-violet-500/50'
-                : 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
-              }
-            `}
-          >
-            {isSaving ? '⏳ Saving & Uploading...' : '🚀 Start Game'}
-          </motion.button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <motion.button
+              whileHover={isValid && !isSaving ? { scale: 1.02 } : {}}
+              whileTap={isValid && !isSaving ? { scale: 0.98 } : {}}
+              onClick={handleQuickStart}
+              disabled={!isValid || isSaving}
+              className={`flex-1 py-4 rounded-2xl font-bold text-lg transition-all duration-300 cursor-pointer
+                ${isValid && !isSaving
+                  ? 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30'
+                  : 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
+                }
+              `}
+            >
+              ⚡ Quick Start (No Save)
+            </motion.button>
+            <motion.button
+              whileHover={isValid && !isSaving ? { scale: 1.02 } : {}}
+              whileTap={isValid && !isSaving ? { scale: 0.98 } : {}}
+              onClick={handleStartGame}
+              disabled={!isValid || isSaving}
+              className={`flex-1 py-4 rounded-2xl font-bold text-lg transition-all duration-300 cursor-pointer
+                ${isValid && !isSaving
+                  ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 text-white shadow-2xl shadow-violet-500/30 hover:shadow-violet-500/50'
+                  : 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
+                }
+              `}
+            >
+              {isSaving ? '⏳ Saving...' : '💾 Save & Start Game'}
+            </motion.button>
+          </div>
         </motion.div>
 
         {/* Footer */}
