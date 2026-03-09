@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import type { GameConfig, CardConfig, QuizData, MultipleChoiceData, MediaQuizData } from '@/types/game';
-import { generateId } from '@/lib/imageUtils';
+// import { generateId } from '@/lib/imageUtils';
 
-export async function GET(request: Request, { params }: { params: { quizId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ quizId: string }> }) {
     try {
         const { quizId } = await params;
 
